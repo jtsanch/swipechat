@@ -7,6 +7,7 @@
   var current_gif = null;
   var fb_instance;
   var auth;
+  var user;
 
   $(document).ready(function(){
     //First thing is initialize the app and ensure they are logged in...
@@ -15,6 +16,7 @@
     $("#home_view").hide();
     $("#login_prompt").show();
     $("#conversation_view").hide();
+    $(".conversation_item").hide();
 
     $(".create_account_link").on("click", function(){
       register_prompt();
@@ -43,6 +45,12 @@
       $(".friend_item").show();
       $(".conversation_item").hide();
     });
+    $("#video_reply").on("click",function(){
+      $('#hidden_video_input').trigger('click');   
+    });
+    $("#home_back").on("click",function(){
+      load_home_view();
+    });
   });
   /*
    * Navigation between the different divs and the action listeners below
@@ -56,13 +64,15 @@
   function register_prompt(){
     $(".login_items").hide();
     $(".register_items").show();
+    $(".conversation_item").hide();
 
     $("#register_user").on("click", function() {
       if($("#registration_password").val() == $("#registration_password_confirmation").val()){
           var email = $("#registration_email").val();
           var password = $("#registration_password").val();
-          auth.createUser(email,password, function(error, user){
+          auth.createUser(email,password, function(error, user_login){
             if(!error){
+              user = user_login;
               fb_instance.child('users').child(user.id).set({email:user.email});
               auth.login('password',{
                 email: email,
@@ -77,16 +87,37 @@
         alert("Passwords do not match!");
       }
     });
+
+    $("#video_reply #hidden_video_input").on("change",function(){
+    var files = this.files;
+    var video_width= 160;
+    var video_height= 120;
+    var video = document.createElement('video');
+    video = mergeProps(video, {
+      controls: false,
+      width: video_width,
+      height: video_height,
+      src: URL.createObjectURL(files[files.length-1].slice())
+    });
+    video.play();
+    $("current_gif_display").innerHTML = video;
+    blob_to_base64(files[files.length-1].slice(),function(b64_data){
+      current_gif = b64_data;
+    });
+  });
+
+
   }
 
   /*
    * Handlers for the conversation view
    */
-   function load_home_view(user){
+   function load_home_view(){
 
      $("#home_view").show();
      $("#login_prompt").hide();
      $("#conversation_view").hide();
+     $(".conversation_item").hide();
 
      //this can be a unique list of ids of all the conversations
      var fb_conversations = fb_instance.child('users').child(user.id).child('conversations');
@@ -111,41 +142,43 @@
       });
    }
    
-   function add_user_list_item(email, id, user){
+   function add_user_list_item(email, id){
       var user_div = document.createElement("li");
       user_div.className ='list-group-item list-group-item-info';
       user_div.innerHTML = email;
       $(user_div).on("click", function(){
 
-        create_conversation(id,user);
+        create_conversation(id);
 
       });
       $("#current_friends").append(user_div);
    }
 
-   function add_conversation_list_item(conversation, user){
+   function add_conversation_list_item(conversation){
       var conversation_div = document.createElement('div');
-      conversation_div.className = 'list_group_item';
-      var conversation = fb_instance.child('conversations').child(conversation.id);
-      conversation.on("value",function(snapshot){
+      var convo_id = conversation.id;
+      conversation_div.className = 'list_group_item list_group_item_info';
+      fb_instance.child("conversations").child(convo_id).on("value",function(snapshot){
         var convo = snapshot.val();
-        var name_to_display = convo.responder;
-        if(name_to_display == user.email){
-          name_to_display = convo.starter;
+        var id_to_display = convo.responder;
+        if(id_to_display == user.id){
+          id_to_display = convo.starter;
         }
-        var message = convo.text.substring(0,20) + "...";
-        conversation_div.innerHTML = name_to_display + "<br />" + message;
-        conversation_div.on("click", function(){
-          load_conversation_view(id, user);
+
+        fb_instance.child("users").child(id_to_display).on("value",function(snapshot){
+          conversation_div.innerHTML = snapshot.val().email;
+          $(conversation_div).on("click", function(){
+            load_conversation_view(convo_id);
+          });
+          $("#current_conversations").append(conversation_div); 
         });
-        $("#conversations").appendChild(conversation_div); 
-      });
+       });
    }
 
   /*
    * Handlers for the conversation view
    */
-   function create_conversation(responder_id, user){
+   function create_conversation(responder_id){
     // increment the counter
     fb_instance.child('counter_conversation').transaction(function(currentValue) {
         return (currentValue||0) + 1
@@ -157,23 +190,23 @@
            // if counter update succeeds, then create record
            // probably want a recourse for failures too
            var fb_new_conversation = fb_instance.child('conversations').child(ss.val());
-           fb_new_conversation.child('users').set({starter:user.id, responder:responder_id});
+           fb_new_conversation.set({starter:user.id, responder:responder_id});
            var fb_starter_ref      = fb_instance.child('users').child(user.id).child('conversations').push({id:ss.val()});
            var fb_responder_ref    = fb_instance.child('users').child(responder_id).child('conversations').push({id:ss.val()});
-           fb_new_conversation.set({seen:"Not seen yet"});
-           load_conversation_view(ss.val(), user);
+           fb_new_conversation.child("seen").set("Not seen yet");
+           load_conversation_view(ss.val());
         }
     });
    }
 
-  function load_conversation_view(conversation_id, user){
+  function load_conversation_view(conversation_id){
     $("#home_view").hide();
     $("#login_prompt").hide();
     $("#conversation_view").show();
     $("#messages").empty();
-
+    $(".conversation_item").show();
     var fb_conversation = fb_instance.child('conversations').child(conversation_id);
-    fb_conversation.update({seen:"Seen at"+(new Date())});
+    fb_conversation.child('seen').set({seen:"Seen at"+(new Date())});
 
     //Load all the messages as they come in...
     fb_conversation.child("messages").on('child_added', function(snapshot){
@@ -240,37 +273,23 @@
         });
   }
 
-  $("#video_reply #hidden_video_input").on("change",function(){
-    var files = this.files;
-    var video_width= 160;
-    var video_height= 120;
-    var video = document.createElement('video');
-    video = mergeProps(video, {
-      controls: false,
-      width: video_width,
-      height: video_height,
-      src: URL.createObjectURL(files[files.length-1].slice())
-    });
-    video.play();
-    $("current_gif_display").innerHTML = video;
-    blob_to_base64(files[files.length-1].slice(),function(b64_data){
-      current_gif = b64_data;
-    });
-  });
 
  function initialize_app(){
      fb_instance = new Firebase("https://sizzling-fire-6665.firebaseio.com");
-     auth = new FirebaseSimpleLogin(fb_instance, function(error, user) {
+     auth = new FirebaseSimpleLogin(fb_instance, function(error, user_login) {
         if (error) {
           // an error occurred while attempting login
           console.log(error);
-        } else if (user) {
+        } else if (user_login) {
+          
           //user is logged in
-          console.log(user);
-          load_home_view(user);
+          user = user_login;
+          load_home_view();
+
         } else {
           $(".login_items").show();
           $(".register_items").hide();
+          $(".conversation_item").hide();
         }
       });
   }
