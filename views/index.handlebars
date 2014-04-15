@@ -1,9 +1,63 @@
-  <div>Welcome to {{title}}, enable camera to post video emoji!</div>
-  <div id="waiting">Connecting to chat server...</div>
-  <div id="second_counter"></div>
-  <div id="conversation"></div>
-  <div id="submission">
-    <input type="text" placeholder="say something..">
+<!--Div to turn on when they need to login-->
+<div id="login_prompt">
+    <div class='login_items'>Login!</div>
+    <div class='register_items' hidden='true'>Register!</div>
+	<div class="login_items">
+	    <input type="email" class="form-control" id="login_email" placeholder="Email">
+	    <input type="password" class="form-control" id="login_password" placeholder="Password">
+	    <a href="#" class='create_account_link'>Create Account</a>
+	</div>
+	<div class="register_items"> 
+		<input type="email" class="form-control" id="registration_email" placeholder="Email">
+		<input type="password" class="form-control" id="registration_password" placeholder="Password">
+		<input type="password" class="form-control" id="registration_password_confirmation" placeholder="Password Confirmation">
+	</div>
+	<nav class="navbar navbar-deault navbar-fixed-bottom" role="navigation">
+        <button type="button" class="btn btn-primary login_items" id="login_user">Login</button>
+        <button type="button" class="btn btn-primary register_items" id="register_user">Register</button>
+    </nav>
   </div>
-  <div id="webcam_stream"></div>
-  <div id="video_container"></div>
+</div>
+
+<!--Div to turn on for the home view-->
+<div id="home_view">
+	<ul class="list-group conversation_item" id="current_conversations"> </ul>
+	
+	<ul class="friend_item list-group" id="current_friends"> </ul>
+	
+	<nav class="navbar navbar-deault navbar-fixed-bottom" role="navigation">
+		
+		<button type='button' class='btn btn-default navbar-btn' id='show_conversations'> 
+			<span class='glyphicon glyphicon-envelope'> </span>
+			<span class="badge" id='conversation_count'></span>
+		</button>
+
+		<button type='button' class='btn btn-default navbar-btn' id='show_friends'>
+			<span class='glyphicon glyphicon-user'></span>
+			<span class="badge" id='friend_count'></span>
+		</button>
+	</nav>
+</div>
+
+
+<!--Div to turn on when we are looking at a specific conversation-->
+<div id="conversation_view">
+	<ul class="list-group" id="messages"> </ul>
+	<div id='current_gif_display'> </div>
+	<div id="seen_div"> </div>
+	<nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+	  <div class="container">
+	  	<input type='text' id='message_input'>
+	  </div>
+	  <div class="container">
+		<button type="file" accept="video/*" capture="camcorder" class="btn btn-default navbar-btn" id="video_reply">
+			<span class="glyphicon glyphicon-facetime-video"></span>Add Emoji GIF
+		</button>
+	  	<button type='button' id='message_send' class='btn btn-default navbar-btn'>
+	  		Send Message
+  		</button>
+	  </div>
+	</nav>
+</div>
+
+<input type='file' accept='video/*' capture='camcorder' id='hidden_video_input' style='position:absolute; top:-100px;'>

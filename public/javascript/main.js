@@ -4,87 +4,278 @@
 (function() {
 
   var cur_video_blob = null;
+  var current_gif = null;
   var fb_instance;
+  var auth;
 
   $(document).ready(function(){
-    connect_to_chat_firebase();
-    connect_webcam();
+    //First thing is initialize the app and ensure they are logged in...
+    initialize_app();
+
+    $("#home_view").hide();
+    $("#login_prompt").show();
+    $("#conversation_view").hide();
+
+    $(".create_account_link").on("click", function(){
+      register_prompt();
+      console.log("create account");
+    });
+    $(".login_account_link").on("click", function(){
+      login_prompt();
+    });
+
+    $("#login_user").on("click", function() {
+      var email = $("#login_email").val();
+      var password = $("#login_password").val();
+      auth.login('password', {
+        email: email,
+        password: password,
+        rememberMe: true
+      });
+    });
+
+    $("#show_conversations").on("click", function(){
+      $(".conversation_item").show();
+      $(".friend_item").hide();
+    });
+
+    $("#show_friends").on("click", function(){
+      $(".friend_item").show();
+      $(".conversation_item").hide();
+    });
   });
+  /*
+   * Navigation between the different divs and the action listeners below
+   */
+   function login_prompt(){
+    $(".login_items").show();
+    $(".register_items").hide();
 
-  function connect_to_chat_firebase(){
-    /* Include your Firebase link here!*/
-    fb_instance = new Firebase("https://gsroth-p3-v1.firebaseio.com");
+  }
 
-    // generate new chatroom id or use existing id
-    var url_segments = document.location.href.split("/#");
-    if(url_segments[1]){
-      fb_chat_room_id = url_segments[1];
-    }else{
-      fb_chat_room_id = Math.random().toString(36).substring(7);
-    }
-    display_msg({m:"Share this url with your friend to join this chat: "+ document.location.origin+"/#"+fb_chat_room_id,c:"red"})
+  function register_prompt(){
+    $(".login_items").hide();
+    $(".register_items").show();
 
-    // set up variables to access firebase data structure
-    var fb_new_chat_room = fb_instance.child('chatrooms').child(fb_chat_room_id);
-    var fb_instance_users = fb_new_chat_room.child('users');
-    var fb_instance_stream = fb_new_chat_room.child('stream');
-    var my_color = "#"+((1<<24)*Math.random()|0).toString(16);
-
-    // listen to events
-    fb_instance_users.on("child_added",function(snapshot){
-      display_msg({m:snapshot.val().name+" joined the room",c: snapshot.val().c});
-    });
-    fb_instance_stream.on("child_added",function(snapshot){
-      display_msg(snapshot.val());
-    });
-
-    // block until username is answered
-    var username = window.prompt("Welcome, warrior! please declare your name?");
-    if(!username){
-      username = "anonymous"+Math.floor(Math.random()*1111);
-    }
-    fb_instance_users.push({ name: username,c: my_color});
-    $("#waiting").remove();
-
-    // bind submission box
-    $("#submission input").keydown(function( event ) {
-      if (event.which == 13) {
-        if(has_emotions($(this).val())){
-          fb_instance_stream.push({m:username+": " +$(this).val(), v:cur_video_blob, c: my_color});
-        }else{
-          fb_instance_stream.push({m:username+": " +$(this).val(), c: my_color});
-        }
-        $(this).val("");
+    $("#register_user").on("click", function() {
+      if($("#registration_password").val() == $("#registration_password_confirmation").val()){
+          var email = $("#registration_email").val();
+          var password = $("#registration_password").val();
+          auth.createUser(email,password, function(error, user){
+            if(!error){
+              fb_instance.child('users').child(user.id).set({email:user.email});
+              auth.login('password',{
+                email: email,
+                password: password,
+                rememberMe: true
+              });
+            } else {
+              alert(error);
+            }
+          });
+      } else {
+        alert("Passwords do not match!");
       }
     });
   }
 
-  // creates a message node and appends it to the conversation
-  function display_msg(data){
-    $("#conversation").append("<div class='msg' style='color:"+data.c+"'>"+data.m+"</div>");
-    if(data.v){
-      // for video element
-      var video = document.createElement("video");
-      video.autoplay = true;
-      video.controls = false; // optional
-      video.loop = true;
-      video.width = 120;
+  /*
+   * Handlers for the conversation view
+   */
+   function load_home_view(user){
 
-      var source = document.createElement("source");
-      source.src =  URL.createObjectURL(base64_to_blob(data.v));
-      source.type =  "video/webm";
+     $("#home_view").show();
+     $("#login_prompt").hide();
+     $("#conversation_view").hide();
 
-      video.appendChild(source);
+     //this can be a unique list of ids of all the conversations
+     var fb_conversations = fb_instance.child('users').child(user.id).child('conversations');
 
-      // for gif instead, use this code below and change mediaRecorder.mimeType in onMediaSuccess below
-      // var video = document.createElement("img");
-      // video.src = URL.createObjectURL(base64_to_blob(data.v));
+     var fb_instance_users = fb_instance.child('users');
 
-      document.getElementById("conversation").appendChild(video);
-    }
-    // Scroll to the bottom every time we display a new message
-    scroll_to_bottom(0);
+     // listen to events
+     fb_instance_users.on("value",function(snapshot){
+        //we will just append this new user to the current list...
+        if(snapshot.val())
+          $.each(snapshot.val(), function(id, friend){
+            add_user_list_item(friend.email, id, user);   
+          }); 
+      });
+      
+      fb_conversations.on("value",function(snapshot){
+        //update the badge count and create a list item
+        if(snapshot.val())
+          $.each(snapshot.val(), function(id, conversation){
+            add_conversation_list_item(conversation, user);
+          });
+      });
+   }
+   
+   function add_user_list_item(email, id, user){
+      var user_div = document.createElement("li");
+      user_div.className ='list-group-item list-group-item-info';
+      user_div.innerHTML = email;
+      $(user_div).on("click", function(){
+
+        create_conversation(id,user);
+
+      });
+      $("#current_friends").append(user_div);
+   }
+
+   function add_conversation_list_item(conversation, user){
+      var conversation_div = document.createElement('div');
+      conversation_div.className = 'list_group_item';
+      var conversation = fb_instance.child('conversations').child(conversation.id);
+      conversation.on("value",function(snapshot){
+        var convo = snapshot.val();
+        var name_to_display = convo.responder;
+        if(name_to_display == user.email){
+          name_to_display = convo.starter;
+        }
+        var message = convo.text.substring(0,20) + "...";
+        conversation_div.innerHTML = name_to_display + "<br />" + message;
+        conversation_div.on("click", function(){
+          load_conversation_view(id, user);
+        });
+        $("#conversations").appendChild(conversation_div); 
+      });
+   }
+
+  /*
+   * Handlers for the conversation view
+   */
+   function create_conversation(responder_id, user){
+    // increment the counter
+    fb_instance.child('counter_conversation').transaction(function(currentValue) {
+        return (currentValue||0) + 1
+    }, function(err, committed, ss) {
+      if( err ) {
+           setError(err);
+        }
+        else if( committed ) {
+           // if counter update succeeds, then create record
+           // probably want a recourse for failures too
+           var fb_new_conversation = fb_instance.child('conversations').child(ss.val());
+           fb_new_conversation.child('users').set({starter:user.id, responder:responder_id});
+           var fb_starter_ref      = fb_instance.child('users').child(user.id).child('conversations').push({id:ss.val()});
+           var fb_responder_ref    = fb_instance.child('users').child(responder_id).child('conversations').push({id:ss.val()});
+           fb_new_conversation.set({seen:"Not seen yet"});
+           load_conversation_view(ss.val(), user);
+        }
+    });
+   }
+
+  function load_conversation_view(conversation_id, user){
+    $("#home_view").hide();
+    $("#login_prompt").hide();
+    $("#conversation_view").show();
+    $("#messages").empty();
+
+    var fb_conversation = fb_instance.child('conversations').child(conversation_id);
+    fb_conversation.update({seen:"Seen at"+(new Date())});
+
+    //Load all the messages as they come in...
+    fb_conversation.child("messages").on('child_added', function(snapshot){
+        var message = snapshot.val();
+        var color = "#82CAFF";
+        if(message.name == user.email){
+          color = "black";
+        }
+        $("#messages").append("<li class='list_group_item' style='color:"+color+"'>"+new Date(message.time)+"<br/>"+
+                              message.text+"</li>");
+        scroll_to_bottom(0);      
+      });
+  
+      fb_conversation.on('value', function(snapshot){
+        $.each(snapshot.val(),function(id,message){
+          if(id == "seen"){
+            $("#seen_div").html(message);
+          } else {
+            if(message){
+              var color = "#82CAFF";
+              if(message.name == user.email){
+                color = "black";
+              }
+              $("#messages").append("<div class='list_group_item' style='color:"+color+"'>"+
+                    (new Date(message.time))+"<br/>"+message.text+"</div>");
+            }
+          }
+        });
+      });
+     
+     //So they can swipe to the right to add a video gif
+      $(document).on( "swipeleft", "ui-page", function( event ) {
+        $('#hidden_video_input').trigger('click');   
+      });
+
+       //When they actually want to send the message
+       $('#message_send').on('click',function(){
+            var name = user.email;
+            var text = $('#message_input').val();
+            if(text.length != ''){
+              fb_conversation.child('messages').push({name:name, text:text, time: new Date().getTime() });
+              if(current_gif)
+                fb_conversation.child('current_gif').push(current_gif);
+            }
+        });
+
+        fb_conversation.child('current_gif').on('child_changed', function(snapshot){
+          if(snapshot.val()){
+            var video = document.createElement("video");
+            video.autoplay = true;
+            video.controls = false; // optional
+            video.loop = true;
+            video.width = 120;
+           
+            var source = document.createElement("source");
+            source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
+            source.type =  "video/webm";
+
+            video.appendChild(source);
+
+            $("#current_gif_display").innerHTML = video;
+            scroll_to_bottom(0); 
+          }
+        });
   }
+
+  $("#video_reply #hidden_video_input").on("change",function(){
+    var files = this.files;
+    var video_width= 160;
+    var video_height= 120;
+    var video = document.createElement('video');
+    video = mergeProps(video, {
+      controls: false,
+      width: video_width,
+      height: video_height,
+      src: URL.createObjectURL(files[files.length-1].slice())
+    });
+    video.play();
+    $("current_gif_display").innerHTML = video;
+    blob_to_base64(files[files.length-1].slice(),function(b64_data){
+      current_gif = b64_data;
+    });
+  });
+
+ function initialize_app(){
+     fb_instance = new Firebase("https://sizzling-fire-6665.firebaseio.com");
+     auth = new FirebaseSimpleLogin(fb_instance, function(error, user) {
+        if (error) {
+          // an error occurred while attempting login
+          console.log(error);
+        } else if (user) {
+          //user is logged in
+          console.log(user);
+          load_home_view(user);
+        } else {
+          $(".login_items").show();
+          $(".register_items").hide();
+        }
+      });
+  }
+
+
 
   function scroll_to_bottom(wait_time){
     // scroll to bottom of div
@@ -93,85 +284,7 @@
     },wait_time);
   }
 
-  function connect_webcam(){
-    // we're only recording video, not audio
-    var mediaConstraints = {
-      video: true,
-      audio: false
-    };
-
-    // callback for when we get video stream from user.
-    var onMediaSuccess = function(stream) {
-      // create video element, attach webcam stream to video element
-      var video_width= 160;
-      var video_height= 120;
-      var webcam_stream = document.getElementById('webcam_stream');
-      var video = document.createElement('video');
-      webcam_stream.innerHTML = "";
-      // adds these properties to the video
-      video = mergeProps(video, {
-          controls: false,
-          width: video_width,
-          height: video_height,
-          src: URL.createObjectURL(stream)
-      });
-      video.play();
-      webcam_stream.appendChild(video);
-
-      // counter
-      var time = 0;
-      var second_counter = document.getElementById('second_counter');
-      var second_counter_update = setInterval(function(){
-        second_counter.innerHTML = time++;
-      },1000);
-
-      // now record stream in 5 seconds interval
-      var video_container = document.getElementById('video_container');
-      var mediaRecorder = new MediaStreamRecorder(stream);
-      var index = 1;
-
-      mediaRecorder.mimeType = 'video/webm';
-      // mediaRecorder.mimeType = 'image/gif';
-      // make recorded media smaller to save some traffic (80 * 60 pixels, 3*24 frames)
-      mediaRecorder.video_width = video_width/2;
-      mediaRecorder.video_height = video_height/2;
-
-      mediaRecorder.ondataavailable = function (blob) {
-          //console.log("new data available!");
-          video_container.innerHTML = "";
-
-          // convert data into base 64 blocks
-          blob_to_base64(blob,function(b64_data){
-            cur_video_blob = b64_data;
-          });
-      };
-      setInterval( function() {
-        mediaRecorder.stop();
-        mediaRecorder.start(3000);
-      }, 3000 );
-      console.log("connect to media stream!");
-    }
-
-    // callback if there is an error when we try and get the video stream
-    var onMediaError = function(e) {
-      console.error('media error', e);
-    }
-
-    // get video stream from user. see https://github.com/streamproc/MediaStreamRecorder
-    navigator.getUserMedia(mediaConstraints, onMediaSuccess, onMediaError);
-  }
-
-  // check to see if a message qualifies to be replaced with video.
-  var has_emotions = function(msg){
-    var options = ["lol",":)",":("];
-    for(var i=0;i<options.length;i++){
-      if(msg.indexOf(options[i])!= -1){
-        return true;
-      }
-    }
-    return false;
-  }
-
+ 
 
   // some handy methods for converting blob to base 64 and vice versa
   // for performance bench mark, please refer to http://jsperf.com/blob-base64-conversion/5

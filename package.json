@@ -1,5 +1,5 @@
 {
-  "name": "application-name",
+  "name": "Swipe-Chat",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -18,5 +18,18 @@
   },
   "engines": {
     "node": "0.10.x"
-  }
+  },
+  "description": "Swipe to chat and send video",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gsroth/cs247-2104-p3.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gsroth/cs247-2104-p3/issues"
+  },
+  "homepage": "https://github.com/gsroth/cs247-2104-p3"
 }
