@@ -18,15 +18,15 @@
     $("#conversation_view").hide();
     $(".conversation_item").hide();
 
-    $(".create_account_link").on("click", function(){
+    $(".create_account_link").on("tap", function(){
       register_prompt();
       console.log("create account");
     });
-    $(".login_account_link").on("click", function(){
+    $(".login_account_link").on("tap", function(){
       login_prompt();
     });
 
-    $("#login_user").on("click", function() {
+    $("#login_user").on("tap", function() {
       var email = $("#login_email").val();
       var password = $("#login_password").val();
       auth.login('password', {
@@ -36,12 +36,12 @@
       });
     });
 
-    $("#show_conversations").on("click", function(){
+    $("#show_conversations").on("tap", function(){
       $(".conversation_item").show();
       $(".friend_item").hide();
     });
 
-    $("#show_friends").on("click", function(){
+    $("#show_friends").on("tap", function(){
       $(".friend_item").show();
       $(".conversation_item").hide();
     });
@@ -147,7 +147,7 @@
       var user_div = document.createElement("li");
       user_div.className ='list-group-item list-group-item-info';
       user_div.innerHTML = email;
-      $(user_div).on("click", function(){
+      $(user_div).on("tap", function(){
 
         create_conversation(id);
 
@@ -168,7 +168,7 @@
 
         fb_instance.child("users").child(id_to_display).on("value",function(snapshot){
           conversation_div.innerHTML = snapshot.val().email;
-          $(conversation_div).on("click", function(){
+          $(conversation_div).on("tap", function(){
             load_conversation_view(convo_id);
           });
           $("#current_conversations").append(conversation_div); 
