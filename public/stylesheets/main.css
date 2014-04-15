@@ -11,6 +11,11 @@ a {
   right: 10px;
   padding: 0;
 }
+#messages {
+  overflow:scroll;
+  height: 80%;
+}
+
 #webcam_stream video {
   border: 2px solid #dcc;
 }
