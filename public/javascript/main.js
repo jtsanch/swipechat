@@ -51,6 +51,26 @@
     $("#home_back").on("click",function(){
       load_home_view();
     });
+
+
+    $("#hidden_video_input").on("change",function(){
+      var files = this.files;
+      var video_width= 160;
+      var video_height= 120;
+      var video = document.createElement('video');
+      video = mergeProps(video, {
+        controls: false,
+        width: video_width,
+        height: video_height,
+        src: URL.createObjectURL(files[files.length-1].slice())
+      });
+      video.play();
+      $("#current_gif_display").html(video);
+      blob_to_base64(files[files.length-1].slice(),function(b64_data){
+        current_gif = b64_data;
+    });
+  });
+
   });
   /*
    * Navigation between the different divs and the action listeners below
@@ -87,25 +107,6 @@
         alert("Passwords do not match!");
       }
     });
-
-    $("#video_reply #hidden_video_input").on("change",function(){
-    var files = this.files;
-    var video_width= 160;
-    var video_height= 120;
-    var video = document.createElement('video');
-    video = mergeProps(video, {
-      controls: false,
-      width: video_width,
-      height: video_height,
-      src: URL.createObjectURL(files[files.length-1].slice())
-    });
-    video.play();
-    $("current_gif_display").innerHTML = video;
-    blob_to_base64(files[files.length-1].slice(),function(b64_data){
-      current_gif = b64_data;
-    });
-  });
-
 
   }
 
