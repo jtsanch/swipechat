@@ -238,7 +238,7 @@
                 source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
                 source.type =  "video/webm";
 
-                video.appendChild(source);
+                video_width.appendChild(source);
 
                 $("#current_gif_display").html(video);
                 scroll_to_bottom(0); 
@@ -254,7 +254,7 @@
          
           var source = document.createElement("source");
           source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
-          source.type =  "video/m4v";
+          source.type =  "video/mp4";
 
           video.appendChild(source);
 
