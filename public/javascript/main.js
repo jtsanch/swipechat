@@ -229,7 +229,22 @@
             }
         });
         fb_conversation.child('current_gif').on('value', function(snapshot){
+          if(snapshot.val()){
+                var video = document.createElement("video");
+                video.autoplay = true;
+                video.controls = false; // optional
+                video.loop = true;
+                video.width = 120;
+               
+                var source = document.createElement("source");
+                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
+                source.type =  "video/webm";
 
+                video.appendChild(source);
+
+                $("#current_gif_display").html(video);
+                scroll_to_bottom(0); 
+              }      
         });
         fb_conversation.child('current_gif').on('child_changed', function(snapshot){
         if(snapshot.val()){
