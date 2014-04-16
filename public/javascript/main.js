@@ -60,13 +60,11 @@
       var video_height= 120;
 
       var video = document.createElement('video');
-      video = mergeProps(video, {
-        controls: false,
-        loop: true,
-        width: video_width,
-        height: video_height,
-        src: URL.createObjectURL(files[files.length-1].slice())
-      });
+      video.loop = true;
+      video.controls = false;
+      video.height = video_height;
+      video.width = video_width;
+      video.src = URL.createObjectURL(files[files.length-1].slice());
       video.play();
       $("#current_gif_display").html(video);
       blob_to_base64(files[files.length-1].slice(),function(b64_data){
