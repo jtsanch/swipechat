@@ -220,8 +220,7 @@
             var text = $('#message_input').val();
             if(text.length != ''){
               fb_conversation.child('messages').push({name:name, text:text, time: new Date().getTime() });
-              if(current_gif)
-                fb_conversation.child('current_gif').set(current_gif);
+              fb_conversation.child('current_gif').set(current_gif);
             }
         });
         fb_conversation.child('current_gif').on('value',function(snapshot){
@@ -235,10 +234,10 @@
             var source = document.createElement("source");
             source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
             source.type =  "video/webm";
-
+            source.src.type = video/mp4;
             video.appendChild(source);
 
-            $("#current_gif_display").innerHTML = video;
+            $("#current_gif_display").html(video);
             scroll_to_bottom(0);
           }
         });
@@ -256,7 +255,7 @@
 
             video.appendChild(source);
 
-            $("#current_gif_display").innerHTML = video;
+            $("#current_gif_display").html(video);
             scroll_to_bottom(0); 
           }
         });
