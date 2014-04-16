@@ -58,18 +58,28 @@
       var files = this.files;
       var video_width= 160;
       var video_height= 120;
+
       var video = document.createElement('video');
       video = mergeProps(video, {
         controls: false,
+        loop: true,
         width: video_width,
         height: video_height,
         src: URL.createObjectURL(files[files.length-1].slice())
       });
       video.play();
+      $("#current_gif_display").html(video);
       blob_to_base64(files[files.length-1].slice(),function(b64_data){
-        fb_conversation.child('current_gif').update(b64_data);
+        fb_conversation.child('current_gif').set(b64_data);
     });
   });
+
+   //So they can swipe to the right to add a video gif
+  $(document).on( "swipeleft", "ui-page", function( event ) {
+    alert("swipe left");
+    $('#hidden_video_input').trigger('click');   
+  });
+
 
   });
   /*
@@ -208,11 +218,6 @@
         });
       });
      
-     //So they can swipe to the right to add a video gif
-      $(document).on( "swipeleft", "ui-page", function( event ) {
-        alert("swipe left");
-        $('#hidden_video_input').trigger('click');   
-      });
 
        //When they actually want to send the message
        $('#message_send').on('click',function(){
@@ -223,7 +228,10 @@
               fb_conversation.child('current_gif').set(current_gif);
             }
         });
-       fb_conversation.child('current_gif').on('child_changed', function(snapshot){
+        fb_conversation.child('current_gif').on('value', function(snapshot){
+
+        });
+        fb_conversation.child('current_gif').on('child_changed', function(snapshot){
         if(snapshot.val()){
           var video = document.createElement("video");
           video.autoplay = true;
