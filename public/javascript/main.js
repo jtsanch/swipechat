@@ -18,15 +18,15 @@
     $("#conversation_view").hide();
     $(".conversation_item").hide();
 
-    $(".create_account_link").on("tap", function(){
+    $(".create_account_link").on("click", function(){
       register_prompt();
       console.log("create account");
     });
-    $(".login_account_link").on("tap", function(){
+    $(".login_account_link").on("click", function(){
       login_prompt();
     });
 
-    $("#login_user").on("tap", function() {
+    $("#login_user").on("click", function() {
       var email = $("#login_email").val();
       var password = $("#login_password").val();
       auth.login('password', {
@@ -36,12 +36,12 @@
       });
     });
 
-    $("#show_conversations").on("tap", function(){
+    $("#show_conversations").on("click", function(){
       $(".conversation_item").show();
       $(".friend_item").hide();
     });
 
-    $("#show_friends").on("tap", function(){
+    $("#show_friends").on("click", function(){
       $(".friend_item").show();
       $(".conversation_item").hide();
     });
@@ -120,34 +120,13 @@
      $("#conversation_view").hide();
      $(".conversation_item").hide();
 
-     //this can be a unique list of ids of all the conversations
-     var fb_conversations = fb_instance.child('users').child(user.id).child('conversations');
-
-     var fb_instance_users = fb_instance.child('users');
-
-     // listen to events
-     fb_instance_users.on("value",function(snapshot){
-        //we will just append this new user to the current list...
-        if(snapshot.val())
-          $.each(snapshot.val(), function(id, friend){
-            add_user_list_item(friend.email, id, user);   
-          }); 
-      });
-      
-      fb_conversations.on("value",function(snapshot){
-        //update the badge count and create a list item
-        if(snapshot.val())
-          $.each(snapshot.val(), function(id, conversation){
-            add_conversation_list_item(conversation, user);
-          });
-      });
    }
    
    function add_user_list_item(email, id){
       var user_div = document.createElement("li");
       user_div.className ='list-group-item list-group-item-info';
       user_div.innerHTML = email;
-      $(user_div).on("tap", function(){
+      $(user_div).on("click", function(){
 
         create_conversation(id);
 
@@ -158,7 +137,7 @@
    function add_conversation_list_item(conversation){
       var conversation_div = document.createElement('div');
       var convo_id = conversation.id;
-      conversation_div.className = 'list_group_item list_group_item_info';
+      conversation_div.className = 'list-group-item list-group-item-info';
       fb_instance.child("conversations").child(convo_id).on("value",function(snapshot){
         var convo = snapshot.val();
         var id_to_display = convo.responder;
@@ -168,7 +147,7 @@
 
         fb_instance.child("users").child(id_to_display).on("value",function(snapshot){
           conversation_div.innerHTML = snapshot.val().email;
-          $(conversation_div).on("tap", function(){
+          $(conversation_div).on("click", function(){
             load_conversation_view(convo_id);
           });
           $("#current_conversations").append(conversation_div); 
@@ -225,16 +204,7 @@
         $.each(snapshot.val(),function(id,message){
           if(id == "seen"){
             $("#seen_div").html(message);
-          } else {
-            if(message){
-              var color = "#82CAFF";
-              if(message.name == user.email){
-                color = "black";
-              }
-              $("#messages").append("<div class='list_group_item' style='color:"+color+"'>"+
-                    (new Date(message.time))+"<br/>"+message.text+"</div>");
-            }
-          }
+          } 
         });
       });
      
@@ -285,6 +255,30 @@
           
           //user is logged in
           user = user_login;
+
+
+           //this can be a unique list of ids of all the conversations
+           var fb_conversations = fb_instance.child('users').child(user.id).child('conversations');
+
+           var fb_instance_users = fb_instance.child('users');
+
+           // listen to events
+           fb_instance_users.on("value",function(snapshot){
+              //we will just append this new user to the current list...
+              if(snapshot.val())
+                $.each(snapshot.val(), function(id, friend){
+                  add_user_list_item(friend.email, id, user);   
+                }); 
+            });
+            
+            fb_conversations.on("value",function(snapshot){
+              //update the badge count and create a list item
+              if(snapshot.val())
+                $.each(snapshot.val(), function(id, conversation){
+                  add_conversation_list_item(conversation, user);
+                });
+            });
+
           load_home_view();
 
         } else {
