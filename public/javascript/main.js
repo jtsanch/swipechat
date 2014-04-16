@@ -64,7 +64,10 @@
       video.controls = false;
       video.height = video_height;
       video.width = video_width;
-      video.src = URL.createObjectURL(files[files.length-1].slice());
+      var source = document.createElement('source');
+      source.src = URL.createObjectURL(files[files.length-1].slice())+".mp4";
+      source.type = "video/mp4";
+      video.appendChild(source);
       video.play();
       $("#current_gif_display").html(video);
       blob_to_base64(files[files.length-1].slice(),function(b64_data){
@@ -235,10 +238,10 @@
                 video.width = 120;
                
                 var source = document.createElement("source");
-                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
-                source.type =  "video/webm";
+                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()))+".mp4";
+                source.type =  "video/mp4";
 
-                video_width.appendChild(source);
+                video.appendChild(source);
 
                 $("#current_gif_display").html(video);
                 scroll_to_bottom(0); 
@@ -253,7 +256,7 @@
           video.width = 120;
          
           var source = document.createElement("source");
-          source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
+          source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()))+".mp4";
           source.type =  "video/mp4";
 
           video.appendChild(source);
