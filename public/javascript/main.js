@@ -65,12 +65,13 @@
       video.height = video_height;
       video.width = video_width;
       var source = document.createElement('source');
-      source.src = URL.createObjectURL(files[files.length-1].slice())+".mp4";
+      var blob = new Blob([files[files.length-1].slice()],{type:'video/mp4'});
+      source.src = URL.createObjectURL(blob);
       source.type = "video/mp4";
       video.appendChild(source);
       video.play();
       $("#current_gif_display").html(video);
-      blob_to_base64(files[files.length-1].slice(),function(b64_data){
+      blob_to_base64(blob,function(b64_data){
         fb_conversation.child('current_gif').set(b64_data);
     });
   });
@@ -236,9 +237,9 @@
                 video.controls = false; // optional
                 video.loop = true;
                 video.width = 120;
-               
+                
                 var source = document.createElement("source");
-                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()))+".mp4";
+                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
                 source.type =  "video/mp4";
 
                 video.appendChild(source);
@@ -256,7 +257,7 @@
           video.width = 120;
          
           var source = document.createElement("source");
-          source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()))+".mp4";
+          source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
           source.type =  "video/mp4";
 
           video.appendChild(source);
@@ -345,7 +346,7 @@
     for (var i = 0; i < len; i++) {
       view[i] = binary.charCodeAt(i);
     }
-    var blob = new Blob([view]);
+    var blob = new Blob([view], {type:'video/mp4'});
     return blob;
   };
 
