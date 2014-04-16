@@ -6,6 +6,7 @@
   var cur_video_blob = null;
   var current_gif = null;
   var fb_instance;
+  var fb_conversation;
   var auth;
   var user;
 
@@ -65,9 +66,8 @@
         src: URL.createObjectURL(files[files.length-1].slice())
       });
       video.play();
-      $("#current_gif_display").html(video);
       blob_to_base64(files[files.length-1].slice(),function(b64_data){
-        current_gif = b64_data;
+        fb_conversation.child('current_gif').update(b64_data);
     });
   });
 
@@ -185,7 +185,7 @@
     $("#conversation_view").show();
     $("#messages").empty();
     $(".conversation_item").show();
-    var fb_conversation = fb_instance.child('conversations').child(conversation_id);
+    fb_conversation = fb_instance.child('conversations').child(conversation_id);
     fb_conversation.child('seen').set({seen:"Seen at"+(new Date())});
 
     //Load all the messages as they come in...
@@ -223,43 +223,25 @@
               fb_conversation.child('current_gif').set(current_gif);
             }
         });
-        fb_conversation.child('current_gif').on('value',function(snapshot){
-          if(snapshot.val()){
-            var video = document.createElement("video");
-            video.autoplay = true;
-            video.controls = false; // optional
-            video.loop = true;
-            video.width = 120;
-           
-            var source = document.createElement("source");
-            source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
-            source.type =  "video/webm";
-            video.appendChild(source);
+       fb_conversation.child('current_gif').on('child_changed', function(snapshot){
+        if(snapshot.val()){
+          var video = document.createElement("video");
+          video.autoplay = true;
+          video.controls = false; // optional
+          video.loop = true;
+          video.width = 120;
+         
+          var source = document.createElement("source");
+          source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
+          source.type =  "video/webm";
 
-            $("#current_gif_display").html(video);
-            scroll_to_bottom(0);
-            fb_conversation.child('current_gif').on('child_changed', function(snapshot){
-              if(snapshot.val()){
-                var video = document.createElement("video");
-                video.autoplay = true;
-                video.controls = false; // optional
-                video.loop = true;
-                video.width = 120;
-               
-                var source = document.createElement("source");
-                source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
-                source.type =  "video/webm";
+          video.appendChild(source);
 
-                video.appendChild(source);
+          $("#current_gif_display").html(video);
+          scroll_to_bottom(0); 
+        }
+      });
 
-                $("#current_gif_display").html(video);
-                scroll_to_bottom(0); 
-              }
-            });
-
-          }
-
-        });
   }
 
 
