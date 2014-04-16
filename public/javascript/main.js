@@ -256,7 +256,7 @@
          
           var source = document.createElement("source");
           source.src =  URL.createObjectURL(base64_to_blob(snapshot.val()));
-          source.type =  "video/webm";
+          source.type =  "video/m4v";
 
           video.appendChild(source);
 
